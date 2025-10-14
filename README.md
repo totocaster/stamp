@@ -1,5 +1,10 @@
 # Stamp
 
+[![Release](https://img.shields.io/github/v/release/totocaster/stamp)](https://github.com/totocaster/stamp/releases)
+[![CI](https://github.com/totocaster/stamp/actions/workflows/ci.yml/badge.svg)](https://github.com/totocaster/stamp/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/totocaster/stamp)](https://go.dev/)
+[![License](https://img.shields.io/github/license/totocaster/stamp)](https://github.com/totocaster/stamp/blob/main/LICENSE)
+
 A simple Go CLI tool for generating note filenames based on date/time following Toto's note naming conventions. Available as both `stamp` and `nid` commands.
 
 ## Features
@@ -42,11 +47,28 @@ $ stamp analog
 
 ## Installation
 
+### Homebrew (macOS/Linux)
+
+```bash
+brew tap totocaster/tap
+brew install stamp  # Installs both stamp and nid commands
+```
+
+### Direct Download
+
+Download the latest binary for your platform from the [releases page](https://github.com/totocaster/stamp/releases).
+
+### Using Go
+
+```bash
+go install github.com/toto/stamp/cmd/stamp@latest
+```
+
 ### From Source
 
 ```bash
 # Clone the repository
-git clone https://github.com/toto/stamp.git
+git clone https://github.com/totocaster/stamp.git
 cd stamp
 
 # Build and install using Make
@@ -56,19 +78,6 @@ make install
 go build -o stamp cmd/stamp/main.go
 sudo cp stamp /usr/local/bin/
 sudo ln -s /usr/local/bin/stamp /usr/local/bin/nid
-```
-
-### Using Go
-
-```bash
-go install github.com/toto/stamp/cmd/stamp@latest
-```
-
-### Homebrew (Coming Soon)
-
-```bash
-# Future installation method
-brew install stamp  # Will create both stamp and nid commands
 ```
 
 ## Usage

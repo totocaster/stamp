@@ -1,0 +1,218 @@
+# GoReleaser configuration
+# Documentation: https://goreleaser.com
+
+version: 2
+
+# Set environment variables
+env:
+  - GO111MODULE=on
+  - CGO_ENABLED=0
+
+# Clean dist folder before build
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+# Build configuration
+builds:
+  - id: stamp
+    main: ./cmd/stamp/main.go
+    binary: stamp
+
+    # Custom ldflags for version info
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+    # Build for multiple platforms
+    goos:
+      - linux
+      - darwin
+      - windows
+
+    goarch:
+      - amd64
+      - arm64
+      - "386"
+
+    # Skip certain combinations
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarch: "386"
+      - goos: linux
+        goarch: "386"
+
+    # Environment variables for build
+    env:
+      - CGO_ENABLED=0
+
+# Archive configuration
+archives:
+  - id: stamp-archive
+    name_template: >-
+      stamp_
+      {{- .Version }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+
+    # Archive format
+    format_overrides:
+      - goos: windows
+        format: zip
+
+    # Files to include in archive
+    files:
+      - LICENSE
+      - README.md
+
+    # Create a separate archive for each platform
+    builds_info:
+      group: root
+      owner: root
+
+# Checksum configuration
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+# Snapshot configuration (for non-tagged builds)
+snapshot:
+  version_template: "{{ .Tag }}-dev"
+
+# Release configuration
+release:
+  github:
+    owner: totocaster
+    name: stamp
+
+  # Release notes
+  header: |
+    ## Stamp {{ .Version }} ({{ .Date }})
+
+  footer: |
+    ---
+
+    **Full Changelog**: https://github.com/totocaster/stamp/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+    ## Installation
+
+    ### Homebrew (macOS/Linux)
+    ```bash
+    brew tap totocaster/tap
+    brew install stamp
+    ```
+
+    ### Direct Download
+    Download the appropriate binary for your platform from the assets below.
+
+    ### Build from Source
+    ```bash
+    go install github.com/toto/stamp/cmd/stamp@{{ .Tag }}
+    ```
+
+  # Use the changelog for release notes
+  use_package_registry: false
+  draft: false
+  prerelease: auto
+  mode: replace
+  skip_upload: false
+
+# Changelog configuration
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - '^chore:'
+      - '^style:'
+      - 'typo'
+      - 'Merge pull request'
+      - 'Merge branch'
+
+  groups:
+    - title: '✨ Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: '🐛 Bug Fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: '📚 Documentation'
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: '⚡ Performance'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: '🔧 Other Changes'
+      order: 999
+
+# macOS Universal Binary
+universal_binaries:
+  - id: stamp-universal
+    ids:
+      - stamp
+    name_template: "stamp_{{ .Version }}_Darwin_universal"
+    replace: false
+
+# Homebrew tap configuration
+brews:
+  - name: stamp
+
+    # GitHub repository for the tap
+    repository:
+      owner: totocaster
+      name: homebrew-tap
+      branch: main
+
+      # Use token for authentication
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+
+    # Git commit information
+    commit_author:
+      name: goreleaserbot
+      email: goreleaserbot@users.noreply.github.com
+
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+
+    # Folder inside the tap repository
+    directory: Formula
+
+    # Homepage
+    homepage: "https://github.com/totocaster/stamp"
+
+    # Description
+    description: "A simple Go CLI tool for generating note filenames based on date/time"
+
+    # License
+    license: "MIT"
+
+    # Dependencies
+    dependencies:
+      - name: go
+        type: optional
+
+    # Installation instructions
+    install: |
+      bin.install "stamp"
+      # Create nid symlink
+      bin.install_symlink "stamp" => "nid"
+
+    # Test block
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/stamp version")
+      assert_match(/\d{4}-\d{2}-\d{2}/, shell_output("#{bin}/stamp daily"))
+      assert_predicate bin/"nid", :exist?
+      assert_match(/\d{4}-\d{2}-\d{2}/, shell_output("#{bin}/nid daily"))
+
+# Announce releases
+announce:
+  skip: false
