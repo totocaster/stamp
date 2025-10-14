@@ -35,16 +35,6 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-      - name: Debug - List directory
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          echo "cmd directory:"
-          ls -la cmd/
-          echo "cmd/stamp directory:"
-          ls -la cmd/stamp/
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
