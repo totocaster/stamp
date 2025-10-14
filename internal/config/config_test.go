@@ -1,0 +1,240 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"gopkg.in/yaml.v3"
+)
+
+func TestDefault(t *testing.T) {
+	cfg := Default()
+
+	if cfg == nil {
+		t.Fatal("Default() returned nil")
+	}
+
+	if cfg.Timezone != "" {
+		t.Errorf("Default timezone = %v, want empty string", cfg.Timezone)
+	}
+
+	if cfg.AlwaysExtension != false {
+		t.Errorf("Default AlwaysExtension = %v, want false", cfg.AlwaysExtension)
+	}
+
+	if cfg.ProjectStart != 395 {
+		t.Errorf("Default ProjectStart = %v, want 395", cfg.ProjectStart)
+	}
+
+	home, _ := os.UserHomeDir()
+	expectedCounterFile := filepath.Join(home, ".stamp", "counters.json")
+	if cfg.CounterFile != expectedCounterFile {
+		t.Errorf("Default CounterFile = %v, want %v", cfg.CounterFile, expectedCounterFile)
+	}
+}
+
+func TestLoad_NoConfigFile(t *testing.T) {
+	// Save and restore HOME env var
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	// Create temp dir and set as HOME
+	tmpDir := t.TempDir()
+	os.Setenv("HOME", tmpDir)
+
+	// Load should return defaults when no config exists
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v when no config exists", err)
+	}
+
+	// Should match defaults
+	defaultCfg := Default()
+	if cfg.Timezone != defaultCfg.Timezone {
+		t.Errorf("Load() timezone = %v, want %v", cfg.Timezone, defaultCfg.Timezone)
+	}
+	if cfg.AlwaysExtension != defaultCfg.AlwaysExtension {
+		t.Errorf("Load() AlwaysExtension = %v, want %v", cfg.AlwaysExtension, defaultCfg.AlwaysExtension)
+	}
+	if cfg.ProjectStart != defaultCfg.ProjectStart {
+		t.Errorf("Load() ProjectStart = %v, want %v", cfg.ProjectStart, defaultCfg.ProjectStart)
+	}
+}
+
+func TestLoad_WithConfigFile(t *testing.T) {
+	// Save and restore HOME env var
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	// Create temp dir and set as HOME
+	tmpDir := t.TempDir()
+	os.Setenv("HOME", tmpDir)
+
+	// Create config directory and file
+	configDir := filepath.Join(tmpDir, ".stamp")
+	os.MkdirAll(configDir, 0755)
+
+	// Create test config
+	testConfig := &Config{
+		Timezone:        "Asia/Tokyo",
+		AlwaysExtension: true,
+		CounterFile:     "~/.stamp/test_counters.json",
+		ProjectStart:    500,
+	}
+
+	// Write config file
+	data, err := yaml.Marshal(testConfig)
+	if err != nil {
+		t.Fatalf("Failed to marshal test config: %v", err)
+	}
+
+	configFile := filepath.Join(configDir, "config.yaml")
+	err = os.WriteFile(configFile, data, 0644)
+	if err != nil {
+		t.Fatalf("Failed to write test config: %v", err)
+	}
+
+	// Load config
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	// Verify loaded values
+	if cfg.Timezone != "Asia/Tokyo" {
+		t.Errorf("Load() Timezone = %v, want Asia/Tokyo", cfg.Timezone)
+	}
+
+	if cfg.AlwaysExtension != true {
+		t.Errorf("Load() AlwaysExtension = %v, want true", cfg.AlwaysExtension)
+	}
+
+	if cfg.ProjectStart != 500 {
+		t.Errorf("Load() ProjectStart = %v, want 500", cfg.ProjectStart)
+	}
+
+	expectedCounterFile := filepath.Join(tmpDir, ".stamp", "test_counters.json")
+	if cfg.CounterFile != expectedCounterFile {
+		t.Errorf("Load() CounterFile = %v, want %v", cfg.CounterFile, expectedCounterFile)
+	}
+}
+
+func TestLoad_InvalidYAML(t *testing.T) {
+	// Save and restore HOME env var
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	// Create temp dir and set as HOME
+	tmpDir := t.TempDir()
+	os.Setenv("HOME", tmpDir)
+
+	// Create config directory
+	configDir := filepath.Join(tmpDir, ".stamp")
+	os.MkdirAll(configDir, 0755)
+
+	// Write invalid YAML
+	configFile := filepath.Join(configDir, "config.yaml")
+	err := os.WriteFile(configFile, []byte("invalid: yaml: content:"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write invalid config: %v", err)
+	}
+
+	// Load should fail
+	cfg, err := Load()
+	if err == nil {
+		t.Error("Load() should return error for invalid YAML")
+	}
+	if cfg != nil {
+		t.Error("Load() should return nil config for invalid YAML")
+	}
+}
+
+func TestSave(t *testing.T) {
+	// Save and restore HOME env var
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	// Create temp dir and set as HOME
+	tmpDir := t.TempDir()
+	os.Setenv("HOME", tmpDir)
+
+	// Create config
+	cfg := &Config{
+		Timezone:        "UTC",
+		AlwaysExtension: true,
+		CounterFile:     "~/.stamp/my_counters.json",
+		ProjectStart:    1000,
+	}
+
+	// Save config
+	err := cfg.Save()
+	if err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+
+	// Verify file was created
+	configFile := filepath.Join(tmpDir, ".stamp", "config.yaml")
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		t.Error("Config file was not created")
+	}
+
+	// Load and verify
+	loadedCfg, err := Load()
+	if err != nil {
+		t.Fatalf("Failed to load saved config: %v", err)
+	}
+
+	if loadedCfg.Timezone != cfg.Timezone {
+		t.Errorf("Loaded Timezone = %v, want %v", loadedCfg.Timezone, cfg.Timezone)
+	}
+
+	if loadedCfg.AlwaysExtension != cfg.AlwaysExtension {
+		t.Errorf("Loaded AlwaysExtension = %v, want %v", loadedCfg.AlwaysExtension, cfg.AlwaysExtension)
+	}
+
+	if loadedCfg.ProjectStart != cfg.ProjectStart {
+		t.Errorf("Loaded ProjectStart = %v, want %v", loadedCfg.ProjectStart, cfg.ProjectStart)
+	}
+}
+
+func TestLoad_PartialConfig(t *testing.T) {
+	// Save and restore HOME env var
+	originalHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", originalHome)
+
+	// Create temp dir and set as HOME
+	tmpDir := t.TempDir()
+	os.Setenv("HOME", tmpDir)
+
+	// Create config directory
+	configDir := filepath.Join(tmpDir, ".stamp")
+	os.MkdirAll(configDir, 0755)
+
+	// Write partial config (only timezone)
+	configFile := filepath.Join(configDir, "config.yaml")
+	err := os.WriteFile(configFile, []byte("timezone: America/New_York\n"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to write partial config: %v", err)
+	}
+
+	// Load config
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	// Verify specified value
+	if cfg.Timezone != "America/New_York" {
+		t.Errorf("Load() Timezone = %v, want America/New_York", cfg.Timezone)
+	}
+
+	// Verify defaults for unspecified values
+	if cfg.AlwaysExtension != false {
+		t.Errorf("Load() AlwaysExtension = %v, want false (default)", cfg.AlwaysExtension)
+	}
+
+	if cfg.ProjectStart != 395 {
+		t.Errorf("Load() ProjectStart = %v, want 395 (default)", cfg.ProjectStart)
+	}
+}
