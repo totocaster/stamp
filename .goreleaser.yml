@@ -117,8 +117,7 @@ release:
     go install github.com/toto/stamp/cmd/stamp@{{ .Tag }}
     ```
 
-  # Use the changelog for release notes
-  use_package_registry: false
+  # Release settings
   draft: false
   prerelease: auto
   mode: replace
@@ -213,6 +212,6 @@ brews:
       assert_predicate bin/"nid", :exist?
       assert_match(/\d{4}-\d{2}-\d{2}/, shell_output("#{bin}/nid daily"))
 
-# Announce releases
-announce:
-  skip: false
+# Announce releases (disabled for now)
+# announce:
+#   skip: false
