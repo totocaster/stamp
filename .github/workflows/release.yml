@@ -35,17 +35,24 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-      - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          install-only: true
-          version: latest
+      - name: Debug - List directory
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "Directory contents:"
+          ls -la
+          echo "cmd directory:"
+          ls -la cmd/
+          echo "cmd/stamp directory:"
+          ls -la cmd/stamp/
 
       - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: goreleaser release --clean
 
       - name: Upload assets
         uses: actions/upload-artifact@v4
