@@ -31,19 +31,13 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
 
     goarch:
       - amd64
       - arm64
-      - "386"
 
     # Skip certain combinations
     ignore:
-      - goos: windows
-        goarch: arm64
-      - goos: windows
-        goarch: "386"
       - goos: linux
         goarch: "386"
 
@@ -63,9 +57,7 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
 
     # Archive format
-    format_overrides:
-      - goos: windows
-        format: zip
+    # All archives use tar.gz (default)
 
     # Files to include in archive
     files:
