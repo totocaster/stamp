@@ -21,9 +21,9 @@ go.work.sum
 # env file
 .env
 
-# Build output
-stamp
-nid
+# Build output (binaries only in root)
+/stamp
+/nid
 dist/
 build/
 
