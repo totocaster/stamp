@@ -7,7 +7,9 @@ import (
 
 // Generator handles timestamp generation with timezone support
 type Generator struct {
-	location *time.Location
+	location      *time.Location
+	defaultLayout string
+	dailyLayout   string
 }
 
 // New creates a new generator with the specified timezone
@@ -23,7 +25,9 @@ func New(timezone string) (*Generator, error) {
 	}
 
 	return &Generator{
-		location: loc,
+		location:      loc,
+		defaultLayout: "2006-01-02-1504",
+		dailyLayout:   "2006-01-02",
 	}, nil
 }
 
@@ -34,17 +38,12 @@ func (g *Generator) now() time.Time {
 
 // Default generates YYYY-MM-DD-HHMM format
 func (g *Generator) Default() string {
-	now := g.now()
-	return fmt.Sprintf("%04d-%02d-%02d-%02d%02d",
-		now.Year(), now.Month(), now.Day(),
-		now.Hour(), now.Minute())
+	return g.now().Format(g.defaultLayout)
 }
 
 // Daily generates YYYY-MM-DD format
 func (g *Generator) Daily() string {
-	now := g.now()
-	return fmt.Sprintf("%04d-%02d-%02d",
-		now.Year(), now.Month(), now.Day())
+	return g.now().Format(g.dailyLayout)
 }
 
 // Fleeting generates YYYY-MM-DD-FHHMMSS format
@@ -93,4 +92,20 @@ func (g *Generator) FormatProject(num int, title string) string {
 		result += " " + title
 	}
 	return result
+}
+
+// LayoutOverrides adjust dynamic layouts applied to generator output.
+type LayoutOverrides struct {
+	Default string
+	Daily   string
+}
+
+// ApplyLayouts updates the generator with new layouts when provided.
+func (g *Generator) ApplyLayouts(overrides LayoutOverrides) {
+	if overrides.Default != "" {
+		g.defaultLayout = overrides.Default
+	}
+	if overrides.Daily != "" {
+		g.dailyLayout = overrides.Daily
+	}
 }

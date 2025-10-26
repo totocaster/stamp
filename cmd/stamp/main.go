@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/toto/stamp/internal/clipboard"
 	"github.com/toto/stamp/internal/config"
 	"github.com/toto/stamp/internal/counter"
 	"github.com/toto/stamp/internal/generator"
-	"github.com/toto/stamp/internal/clipboard"
+	"github.com/toto/stamp/internal/obsidian"
 )
 
 var (
@@ -18,17 +19,17 @@ var (
 )
 
 var (
-	cfg       *config.Config
-	cntr      *counter.Manager
-	gen       *generator.Generator
+	cfg  *config.Config
+	cntr *counter.Manager
+	gen  *generator.Generator
 
 	// Flags
-	flagExt    bool
-	flagCopy   bool
-	flagQuiet  bool
-	flagCheck  bool
-	flagReset  bool
-	flagSet    int
+	flagExt     bool
+	flagCopy    bool
+	flagQuiet   bool
+	flagCheck   bool
+	flagReset   bool
+	flagSet     int
 	flagCounter bool
 )
 
@@ -279,6 +280,23 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing generator: %v\n", err)
 		os.Exit(1)
+	}
+
+	if wd, err := os.Getwd(); err == nil {
+		if detectResult, detectErr := obsidian.Detect(wd); detectErr != nil {
+			fmt.Fprintf(os.Stderr, "Obsidian detection warning: %v\n", detectErr)
+			if detectResult != nil && detectResult.InVault {
+				gen.ApplyLayouts(generator.LayoutOverrides{
+					Default: detectResult.Layouts.Default,
+					Daily:   detectResult.Layouts.Daily,
+				})
+			}
+		} else if detectResult.InVault {
+			gen.ApplyLayouts(generator.LayoutOverrides{
+				Default: detectResult.Layouts.Default,
+				Daily:   detectResult.Layouts.Daily,
+			})
+		}
 	}
 
 	// Apply default extension flag from config

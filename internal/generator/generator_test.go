@@ -197,6 +197,26 @@ func TestGenerator_FormatProject(t *testing.T) {
 	}
 }
 
+func TestGenerator_ApplyLayouts(t *testing.T) {
+	gen, err := New("")
+	if err != nil {
+		t.Fatalf("Failed to create generator: %v", err)
+	}
+
+	gen.ApplyLayouts(LayoutOverrides{
+		Default: "20060102-1504",
+		Daily:   "20060102",
+	})
+
+	if defaultStamp := gen.Default(); !regexp.MustCompile(`^\d{8}-\d{4}$`).MatchString(defaultStamp) {
+		t.Fatalf("unexpected default layout result: %q", defaultStamp)
+	}
+
+	if daily := gen.Daily(); !regexp.MustCompile(`^\d{8}$`).MatchString(daily) {
+		t.Fatalf("unexpected daily layout result: %q", daily)
+	}
+}
+
 func TestGenerator_TimezoneConsistency(t *testing.T) {
 	// Test that timezone is consistently applied
 	gen, err := New("UTC")

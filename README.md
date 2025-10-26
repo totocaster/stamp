@@ -15,6 +15,7 @@ A simple Go CLI tool for generating note filenames based on date/time following 
 - 📋 **Clipboard Support**: Copy generated names directly to clipboard (macOS)
 - 🚀 **Fast & Lightweight**: Written in Go for instant execution
 - 🔄 **Dual Commands**: Use as `stamp` or `nid` (Note ID)
+- 🧭 **Obsidian-Aware**: Automatically picks up [Daily Notes](https://help.obsidian.md/Plugins/Core+plugins/Daily+notes) and [Unique Note Creator](https://github.com/adriano-tirloni/unique-note-creator) formats when run inside a vault
 
 ## Quick Start
 
@@ -162,6 +163,15 @@ counter_file: "~/.stamp/counters.json"
 # Starting project number
 project_start: 395
 ```
+
+### Obsidian Integration
+
+When `stamp` runs inside an Obsidian vault it mirrors your existing date formats.
+
+- **Vault detection**: the CLI walks up from the current working directory until it finds a `.obsidian/` folder.
+- **Daily Notes**: if the core plugin is enabled in `.obsidian/core-plugins.json`, `stamp` reads `daily-notes.json` (or `dailyNotes.format` within `app.json`) and translates the Moment-style string to Go's layout before emitting daily filenames.
+- **Unique Note Creator**: when the community plugin is enabled (or its folder exists) the tool inspects `.obsidian/plugins/unique-note-creator/data.json` for filename patterns and uses them for the default command.
+- **Graceful fallback**: missing files or unsupported tokens leave `stamp` on its built-in formats, and any read/parse issues are emitted as warnings on stderr without interrupting execution.
 
 ## Examples
 
