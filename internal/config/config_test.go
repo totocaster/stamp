@@ -3,10 +3,70 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
 )
+
+func setEnv(key, value string) {
+	if value == "" {
+		os.Unsetenv(key)
+	} else {
+		os.Setenv(key, value)
+	}
+}
+
+func withHomeDir(t *testing.T, dir string) {
+	t.Helper()
+
+	originalHome := os.Getenv("HOME")
+	originalUserProfile := os.Getenv("USERPROFILE")
+	originalHomeDrive := os.Getenv("HOMEDRIVE")
+	originalHomePath := os.Getenv("HOMEPATH")
+
+	t.Cleanup(func() {
+		setEnv("HOME", originalHome)
+		setEnv("USERPROFILE", originalUserProfile)
+		setEnv("HOMEDRIVE", originalHomeDrive)
+		setEnv("HOMEPATH", originalHomePath)
+	})
+
+	setEnv("HOME", dir)
+
+	// On Windows, os.UserHomeDir falls back to USERPROFILE or HOMEDRIVE+HOMEPATH.
+	if runtime.GOOS == "windows" {
+		setEnv("USERPROFILE", dir)
+
+		volume := filepath.VolumeName(dir)
+		path := strings.TrimPrefix(dir, volume)
+		if volume != "" {
+			setEnv("HOMEDRIVE", volume)
+			if path == "" {
+				path = `\`
+			}
+			if !strings.HasPrefix(path, `\`) {
+				path = `\` + path
+			}
+			setEnv("HOMEPATH", path)
+		} else {
+			setEnv("HOMEDRIVE", "")
+			setEnv("HOMEPATH", "")
+		}
+	} else {
+		setEnv("USERPROFILE", dir)
+		setEnv("HOMEDRIVE", "")
+		setEnv("HOMEPATH", "")
+	}
+}
+
+func setupTempHome(t *testing.T) string {
+	t.Helper()
+	tmpDir := t.TempDir()
+	withHomeDir(t, tmpDir)
+	return tmpDir
+}
 
 func TestDefault(t *testing.T) {
 	cfg := Default()
@@ -35,13 +95,8 @@ func TestDefault(t *testing.T) {
 }
 
 func TestLoad_NoConfigFile(t *testing.T) {
-	// Save and restore HOME env var
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-
 	// Create temp dir and set as HOME
-	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
+	setupTempHome(t)
 
 	// Load should return defaults when no config exists
 	cfg, err := Load()
@@ -63,13 +118,8 @@ func TestLoad_NoConfigFile(t *testing.T) {
 }
 
 func TestLoad_WithConfigFile(t *testing.T) {
-	// Save and restore HOME env var
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-
 	// Create temp dir and set as HOME
-	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
+	tmpDir := setupTempHome(t)
 
 	// Create config directory and file
 	configDir := filepath.Join(tmpDir, ".stamp")
@@ -121,13 +171,8 @@ func TestLoad_WithConfigFile(t *testing.T) {
 }
 
 func TestLoad_InvalidYAML(t *testing.T) {
-	// Save and restore HOME env var
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-
 	// Create temp dir and set as HOME
-	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
+	tmpDir := setupTempHome(t)
 
 	// Create config directory
 	configDir := filepath.Join(tmpDir, ".stamp")
@@ -151,13 +196,8 @@ func TestLoad_InvalidYAML(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	// Save and restore HOME env var
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-
 	// Create temp dir and set as HOME
-	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
+	tmpDir := setupTempHome(t)
 
 	// Create config
 	cfg := &Config{
@@ -199,13 +239,8 @@ func TestSave(t *testing.T) {
 }
 
 func TestLoad_PartialConfig(t *testing.T) {
-	// Save and restore HOME env var
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-
 	// Create temp dir and set as HOME
-	tmpDir := t.TempDir()
-	os.Setenv("HOME", tmpDir)
+	tmpDir := setupTempHome(t)
 
 	// Create config directory
 	configDir := filepath.Join(tmpDir, ".stamp")

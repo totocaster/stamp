@@ -19,7 +19,6 @@ linters:
     - staticcheck
     - typecheck
     - unused
-    - shadow
 
   disable:
     - errcheck
