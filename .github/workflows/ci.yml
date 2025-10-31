@@ -3,6 +3,8 @@ name: CI
 on:
   push:
     branches: [ main ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main ]
 
@@ -95,3 +97,41 @@ jobs:
         with:
           name: build-artifacts
           path: dist/
+
+  release:
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Run GoReleaser
+        if: ${{ secrets.HOMEBREW_TAP_TOKEN != '' }}
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Run GoReleaser (skip Homebrew tap update)
+        if: ${{ secrets.HOMEBREW_TAP_TOKEN == '' }}
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean --skip=brews
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
