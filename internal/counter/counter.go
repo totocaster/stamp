@@ -17,9 +17,9 @@ type Data struct {
 
 // Manager handles counter persistence and operations
 type Manager struct {
-	mu       sync.Mutex
-	file     string
-	data     *Data
+	mu   sync.Mutex
+	file string
+	data *Data
 }
 
 // New creates a new counter manager

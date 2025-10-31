@@ -78,17 +78,20 @@ func momentToGoLayout(format string) (string, bool) {
 	return builder.String(), true
 }
 
-func matchToken(runes []rune, start int) (string, string, bool) {
+func matchToken(runes []rune, start int) (token string, layout string, ok bool) {
 	for _, entry := range tokenMap {
 		tokenRunes := []rune(entry.token)
 		if len(runes)-start < len(tokenRunes) {
 			continue
 		}
 		if equalRunes(runes[start:start+len(tokenRunes)], tokenRunes) {
-			return entry.token, entry.layout, true
+			token = entry.token
+			layout = entry.layout
+			ok = true
+			return
 		}
 	}
-	return "", "", false
+	return
 }
 
 func equalRunes(a, b []rune) bool {
