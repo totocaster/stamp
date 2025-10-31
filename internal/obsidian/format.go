@@ -78,7 +78,7 @@ func momentToGoLayout(format string) (string, bool) {
 	return builder.String(), true
 }
 
-func matchToken(runes []rune, start int) (token string, layout string, ok bool) {
+func matchToken(runes []rune, start int) (token, layout string, ok bool) {
 	for _, entry := range tokenMap {
 		tokenRunes := []rune(entry.token)
 		if len(runes)-start < len(tokenRunes) {
