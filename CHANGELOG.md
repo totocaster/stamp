@@ -7,38 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial release of Stamp CLI tool
-- Support for multiple note types:
-  - Default timestamp (YYYY-MM-DD-HHMM)
-  - Daily notes (YYYY-MM-DD)
-  - Fleeting notes (YYYY-MM-DD-FHHMMSS)
-  - Voice transcripts (YYYY-MM-DD-VTHHMMSS)
-  - Analog/slipbox notes (YYYY-MM-DD-AN)
-  - Monthly reviews (YYYY-MM)
-  - Yearly reviews (YYYY)
-  - Project notes (PXXXX)
-- Smart counter management for analog and project notes
-- Persistent counter storage
-- Clipboard support for macOS
-- Configuration file support (~/.stamp/config.yaml)
-- Dual command names: `stamp` and `nid`
-- Cross-platform support (macOS, Linux, Windows)
-- Automated release pipeline with GoReleaser
-- Homebrew tap for easy installation
-- Comprehensive test coverage
-- Version command with build information
+- Placeholder for future changes.
 
-### Infrastructure
-- GitHub Actions CI/CD pipeline
-- Automated releases with GoReleaser
-- Homebrew formula generation
-- Multi-platform builds
-- Code linting with golangci-lint
+## [0.2.0] - 2025-10-31
+
+### Added
+- Obsidian vault detection with automatic format discovery for note generation.
+
+### Changed
+- Hardened configuration handling and tests to support Windows paths.
+- Modernised CI and release workflows so multi-OS tests and GoReleaser runs succeed reliably.
+
+### Fixed
+- Addressed lint regressions to keep `main` releasable.
 
 ## [0.1.0] - TBD
 
 Initial public release. See Unreleased section for features.
 
-[Unreleased]: https://github.com/totocaster/stamp/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/totocaster/stamp/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/totocaster/stamp/compare/v0.1.1...v0.2.0
 [0.1.0]: https://github.com/totocaster/stamp/releases/tag/v0.1.0
