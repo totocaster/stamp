@@ -99,6 +99,7 @@ func TestManager_AnalogCounters(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo // covers multiple related behaviours in a single flow for readability
 func TestManager_ProjectCounters(t *testing.T) {
 	counterFile := createTempCounterFile(t)
 	manager, err := New(counterFile)

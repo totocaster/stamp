@@ -123,7 +123,7 @@ func TestLoad_WithConfigFile(t *testing.T) {
 
 	// Create config directory and file
 	configDir := filepath.Join(tmpDir, ".stamp")
-	os.MkdirAll(configDir, 0755)
+	os.MkdirAll(configDir, 0o755)
 
 	// Create test config
 	testConfig := &Config{
@@ -140,7 +140,7 @@ func TestLoad_WithConfigFile(t *testing.T) {
 	}
 
 	configFile := filepath.Join(configDir, "config.yaml")
-	err = os.WriteFile(configFile, data, 0644)
+	err = os.WriteFile(configFile, data, 0o600)
 	if err != nil {
 		t.Fatalf("Failed to write test config: %v", err)
 	}
@@ -176,11 +176,11 @@ func TestLoad_InvalidYAML(t *testing.T) {
 
 	// Create config directory
 	configDir := filepath.Join(tmpDir, ".stamp")
-	os.MkdirAll(configDir, 0755)
+	os.MkdirAll(configDir, 0o755)
 
 	// Write invalid YAML
 	configFile := filepath.Join(configDir, "config.yaml")
-	err := os.WriteFile(configFile, []byte("invalid: yaml: content:"), 0644)
+	err := os.WriteFile(configFile, []byte("invalid: yaml: content:"), 0o600)
 	if err != nil {
 		t.Fatalf("Failed to write invalid config: %v", err)
 	}
@@ -244,11 +244,11 @@ func TestLoad_PartialConfig(t *testing.T) {
 
 	// Create config directory
 	configDir := filepath.Join(tmpDir, ".stamp")
-	os.MkdirAll(configDir, 0755)
+	os.MkdirAll(configDir, 0o755)
 
 	// Write partial config (only timezone)
 	configFile := filepath.Join(configDir, "config.yaml")
-	err := os.WriteFile(configFile, []byte("timezone: America/New_York\n"), 0644)
+	err := os.WriteFile(configFile, []byte("timezone: America/New_York\n"), 0o600)
 	if err != nil {
 		t.Fatalf("Failed to write partial config: %v", err)
 	}

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -57,7 +58,7 @@ func Load() (*Config, error) {
 	}
 
 	// Expand counter file path if it starts with ~
-	if len(cfg.CounterFile) > 0 && cfg.CounterFile[0] == '~' {
+	if strings.HasPrefix(cfg.CounterFile, "~/") || strings.HasPrefix(cfg.CounterFile, "~\\") {
 		cfg.CounterFile = filepath.Join(home, cfg.CounterFile[2:])
 	}
 
@@ -75,7 +76,7 @@ func (c *Config) Save() error {
 	configFile := filepath.Join(configDir, "config.yaml")
 
 	// Ensure directory exists
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
 		return err
 	}
 
@@ -86,5 +87,5 @@ func (c *Config) Save() error {
 	}
 
 	// Write to file
-	return os.WriteFile(configFile, data, 0644)
+	return os.WriteFile(configFile, data, 0o600)
 }

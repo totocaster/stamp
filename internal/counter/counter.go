@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
-// CounterData stores all counter information
-type CounterData struct {
+// Data stores all counter information
+type Data struct {
 	Project int            `json:"project"`
 	Analog  map[string]int `json:"analog"` // Date -> counter mapping
 }
@@ -18,13 +19,13 @@ type CounterData struct {
 type Manager struct {
 	mu       sync.Mutex
 	file     string
-	data     *CounterData
+	data     *Data
 }
 
 // New creates a new counter manager
 func New(counterFile string) (*Manager, error) {
 	// Expand ~ to home directory
-	if counterFile[:2] == "~/" {
+	if strings.HasPrefix(counterFile, "~/") {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return nil, err
@@ -34,7 +35,7 @@ func New(counterFile string) (*Manager, error) {
 
 	m := &Manager{
 		file: counterFile,
-		data: &CounterData{
+		data: &Data{
 			Analog: make(map[string]int),
 		},
 	}
@@ -46,7 +47,7 @@ func New(counterFile string) (*Manager, error) {
 			// Log warning about corruption
 			fmt.Fprintf(os.Stderr, "Warning: Counter file corrupted, starting fresh: %v\n", err)
 		}
-		m.data = &CounterData{
+		m.data = &Data{
 			Project: 395, // Default starting number as per spec
 			Analog:  make(map[string]int),
 		}
@@ -63,7 +64,7 @@ func New(counterFile string) (*Manager, error) {
 func (m *Manager) load() error {
 	// Ensure directory exists
 	dir := filepath.Dir(m.file)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 
@@ -79,7 +80,7 @@ func (m *Manager) load() error {
 func (m *Manager) save() error {
 	// Ensure directory exists
 	dir := filepath.Dir(m.file)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 
@@ -88,7 +89,7 @@ func (m *Manager) save() error {
 		return err
 	}
 
-	return os.WriteFile(m.file, data, 0644)
+	return os.WriteFile(m.file, data, 0o600)
 }
 
 // NextAnalog returns the next analog number for the given date and increments it

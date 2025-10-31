@@ -228,6 +228,7 @@ func findFormatInJSON(data []byte) string {
 	return ""
 }
 
+//nolint:gocognit // the nested traversal keeps intent clear while covering plugin structures
 func searchFormat(node interface{}) (string, bool) {
 	switch v := node.(type) {
 	case map[string]interface{}:
