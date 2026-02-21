@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/toto/stamp/internal/clipboard"
@@ -10,6 +11,7 @@ import (
 	"github.com/toto/stamp/internal/counter"
 	"github.com/toto/stamp/internal/generator"
 	"github.com/toto/stamp/internal/obsidian"
+	"github.com/toto/stamp/internal/sequential"
 )
 
 var (
@@ -24,13 +26,19 @@ var (
 	gen  *generator.Generator
 
 	// Flags
-	flagExt     bool
-	flagCopy    bool
-	flagQuiet   bool
-	flagCheck   bool
-	flagReset   bool
-	flagSet     int
-	flagCounter bool
+	flagExt            bool
+	flagCopy           bool
+	flagQuiet          bool
+	flagAnalogCheck    bool
+	flagAnalogReset    bool
+	flagAnalogCounter  bool
+	flagProjectCheck   bool
+	flagProjectCounter bool
+	flagSeqPrefix      string
+	flagSeqWidth       int
+	flagSeqStart       int
+	flagSeqCheck       bool
+	flagSeqCounter     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -45,7 +53,8 @@ Available note types:
   - analog:   YYYY-MM-DD-AN format (sequential per day)
   - monthly:  YYYY-MM format
   - yearly:   YYYY format
-  - project:  PXXXX format (auto-incrementing)
+  - project:  PXXXX format (shorthand for seq --prefix P --width 4)
+  - seq:      Custom prefix + zero-padded number (workspace scan)
 
 Default (no type): YYYY-MM-DD-HHMM format`,
 	RunE: runDefault,
@@ -63,6 +72,7 @@ func init() {
 	rootCmd.AddCommand(analogCmd)
 	rootCmd.AddCommand(monthlyCmd)
 	rootCmd.AddCommand(yearlyCmd)
+	rootCmd.AddCommand(seqCmd)
 	rootCmd.AddCommand(projectCmd)
 	rootCmd.AddCommand(versionCmd)
 }
@@ -95,7 +105,7 @@ var analogCmd = &cobra.Command{
 	Use:   "analog",
 	Short: "Generate analog/slipbox note filename (YYYY-MM-DD-AN)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if flagCheck {
+		if flagAnalogCheck {
 			result, err := cntr.CheckAnalog(gen.GetCurrentDate())
 			if err != nil {
 				return err
@@ -103,7 +113,7 @@ var analogCmd = &cobra.Command{
 			return outputResult(result)
 		}
 
-		if flagReset {
+		if flagAnalogReset {
 			if err := cntr.ResetAnalog(gen.GetCurrentDate()); err != nil {
 				return err
 			}
@@ -113,7 +123,7 @@ var analogCmd = &cobra.Command{
 			return nil
 		}
 
-		if flagCounter {
+		if flagAnalogCounter {
 			count, err := cntr.GetAnalogCounter(gen.GetCurrentDate())
 			if err != nil {
 				return err
@@ -149,54 +159,33 @@ var yearlyCmd = &cobra.Command{
 var projectCmd = &cobra.Command{
 	Use:   "project [title]",
 	Short: "Generate project number (PXXXX)",
+	Long:  "Equivalent to `stamp seq --prefix P --width 4`.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if flagCheck {
-			result, err := cntr.CheckProject()
-			if err != nil {
-				return err
-			}
-			return outputResult(result)
-		}
+		return runSeqCommand(seqCommandOptions{
+			Spec:         sequential.Spec{Prefix: "P", Width: 4, Start: 1},
+			CounterLabel: "project",
+			Check:        flagProjectCheck,
+			Counter:      flagProjectCounter,
+			TitleArgs:    args,
+		})
+	},
+}
 
-		if flagReset {
-			if err := cntr.ResetProject(); err != nil {
-				return err
-			}
-			if !flagQuiet {
-				fmt.Println("Counter reset for project")
-			}
-			return nil
-		}
-
-		if flagSet > 0 {
-			if err := cntr.SetProject(flagSet); err != nil {
-				return err
-			}
-			if !flagQuiet {
-				fmt.Printf("Project counter set to %d\n", flagSet)
-			}
-			return nil
-		}
-
-		if flagCounter {
-			count, err := cntr.GetProjectCounter()
-			if err != nil {
-				return err
-			}
-			fmt.Printf("Current project counter: %d\n", count)
-			return nil
-		}
-
-		var title string
-		if len(args) > 0 {
-			title = args[0]
-		}
-
-		result, err := cntr.NextProject(title)
-		if err != nil {
-			return err
-		}
-		return outputResult(result)
+var seqCmd = &cobra.Command{
+	Use:     "seq [title]",
+	Aliases: []string{"sequential"},
+	Short:   "Generate sequential codes from the current directory",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runSeqCommand(seqCommandOptions{
+			Spec: sequential.Spec{
+				Prefix: flagSeqPrefix,
+				Width:  flagSeqWidth,
+				Start:  flagSeqStart,
+			},
+			Check:     flagSeqCheck,
+			Counter:   flagSeqCounter,
+			TitleArgs: args,
+		})
 	},
 }
 
@@ -209,15 +198,19 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	// Add counter management flags to analog and project commands
-	analogCmd.Flags().BoolVar(&flagCheck, "check", false, "Check next number without incrementing")
-	analogCmd.Flags().BoolVar(&flagReset, "reset", false, "Reset counter")
-	analogCmd.Flags().BoolVar(&flagCounter, "counter", false, "Show current counter value")
+	// Add counter management flags to analog, project, and seq commands
+	analogCmd.Flags().BoolVar(&flagAnalogCheck, "check", false, "Check next number without incrementing")
+	analogCmd.Flags().BoolVar(&flagAnalogReset, "reset", false, "Reset counter")
+	analogCmd.Flags().BoolVar(&flagAnalogCounter, "counter", false, "Show current counter value")
 
-	projectCmd.Flags().BoolVar(&flagCheck, "check", false, "Check next number without incrementing")
-	projectCmd.Flags().BoolVar(&flagReset, "reset", false, "Reset counter")
-	projectCmd.Flags().IntVar(&flagSet, "set", 0, "Set counter to specific value")
-	projectCmd.Flags().BoolVar(&flagCounter, "counter", false, "Show current counter value")
+	projectCmd.Flags().BoolVar(&flagProjectCheck, "check", false, "Check next number without incrementing")
+	projectCmd.Flags().BoolVar(&flagProjectCounter, "counter", false, "Show highest existing number")
+
+	seqCmd.Flags().StringVar(&flagSeqPrefix, "prefix", "P", "Prefix for generated code (case-insensitive match)")
+	seqCmd.Flags().IntVar(&flagSeqWidth, "width", 4, "Number of digits for zero padding")
+	seqCmd.Flags().IntVar(&flagSeqStart, "start", 1, "Starting number when no entries are found")
+	seqCmd.Flags().BoolVar(&flagSeqCheck, "check", false, "Check next number without creating files")
+	seqCmd.Flags().BoolVar(&flagSeqCounter, "counter", false, "Show highest existing number for the prefix")
 }
 
 func runDefault(cmd *cobra.Command, args []string) error {
@@ -256,6 +249,64 @@ func outputResult(result string) error {
 	}
 
 	return nil
+}
+
+type seqCommandOptions struct {
+	Spec         sequential.Spec
+	CounterLabel string
+	Check        bool
+	Counter      bool
+	TitleArgs    []string
+}
+
+func runSeqCommand(opts seqCommandOptions) error {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	if opts.Counter {
+		highest, err := sequential.Highest(wd, opts.Spec)
+		if err != nil {
+			return err
+		}
+
+		label := opts.CounterLabel
+		if label == "" {
+			label = fmt.Sprintf("counter for prefix %s", strings.ToUpper(normalizePrefix(opts.Spec)))
+		} else {
+			label = fmt.Sprintf("%s counter", label)
+		}
+
+		if highest == 0 {
+			fmt.Printf("Current %s: none\n", label)
+		} else {
+			fmt.Printf("Current %s: %d\n", label, highest)
+		}
+		return nil
+	}
+
+	code, _, err := sequential.Next(wd, opts.Spec)
+	if err != nil {
+		return err
+	}
+
+	title := strings.Join(opts.TitleArgs, " ")
+	if opts.Check {
+		title = ""
+	}
+	if title != "" {
+		code += " " + title
+	}
+
+	return outputResult(code)
+}
+
+func normalizePrefix(spec sequential.Spec) string {
+	if spec.Prefix == "" {
+		return "P"
+	}
+	return spec.Prefix
 }
 
 func main() {

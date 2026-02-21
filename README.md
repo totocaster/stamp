@@ -9,8 +9,9 @@ A simple Go CLI tool for generating note filenames based on date/time following 
 
 ## Features
 
-- 📅 **Multiple Note Types**: Daily, fleeting, voice, analog/slipbox, monthly, yearly, and project notes
-- 🔢 **Smart Counters**: Automatic sequential numbering for analog (daily reset) and project notes (persistent)
+- 📅 **Multiple Note Types**: Daily, fleeting, voice, analog/slipbox, monthly, yearly, project notes, and a new customizable seq command
+- 🧩 **Custom Prefixes**: `stamp seq` lets you define the prefix, width, and starting number per directory
+- 🔢 **Smart Counters**: Automatic sequential numbering for analog (daily reset) and workspace-scanned project/custom prefixes
 - ⚙️ **Configurable**: YAML configuration for timezone, defaults, and counter storage
 - 📋 **Clipboard Support**: Copy generated names directly to clipboard (macOS)
 - 🚀 **Fast & Lightweight**: Written in Go for instant execution
@@ -38,6 +39,10 @@ P0395
 
 $ stamp project "New CLI Tool"
 P0396 New CLI Tool
+
+# Custom sequential prefix/width
+$ stamp seq --prefix jin --width 3 "Jinny Research"
+jin001 Jinny Research
 
 # Analog note (sequential per day)
 $ stamp analog
@@ -94,7 +99,8 @@ sudo ln -s /usr/local/bin/stamp /usr/local/bin/nid
 | Analog | `YYYY-MM-DD-AN` | `2025-11-12-A3` | Sequential slipbox notes (daily reset) |
 | Monthly | `YYYY-MM` | `2025-11` | Monthly reviews |
 | Yearly | `YYYY` | `2025` | Yearly reviews |
-| Project | `PXXXX [title]` | `P0395 New Project` | Project numbers (persistent) |
+| Project | `PXXXX [title]` | `P0395 New Project` | Workspace-scanned shorthand for `stamp seq --prefix P --width 4` |
+| Seq | `<prefix><digits> [title]` | `jin005 Lab Notes` | Custom prefix + zero-padded numbers discovered in the current directory |
 
 ### Flags
 
@@ -120,31 +126,35 @@ Copied to clipboard!
 
 ### Counter Management
 
-For sequential types (analog, project), manage counters with:
+Analog/slipbox notes still rely on a persisted counter file, while project/seq commands now scan the current directory for existing IDs.
 
 ```bash
-# Check next number without incrementing
+# Analog (per-day, persisted)
 $ stamp analog --check
 2025-11-12-A3
 
-$ stamp project --check
-P0397
-
-# Reset counter
 $ stamp analog --reset
 Counter reset for analog notes
 
-# Set specific project number
-$ stamp project --set 500
-Project counter set to 500
-
-# Show current counter value
 $ stamp analog --counter
 Current analog counter for 2025-11-12: 2
 
+# Project shorthand (prefix P, width 4)
+$ stamp project --check
+P0397
+
 $ stamp project --counter
 Current project counter: 397
+
+# Fully custom prefixes
+$ stamp seq --prefix jin --width 3 --check
+jin005
+
+$ stamp seq --prefix jin --counter
+Current counter for prefix JIN: 4
 ```
+
+Use `--start` with `stamp seq` to override the default starting number (1) when a directory has no existing codes.
 
 ## Configuration
 
@@ -159,10 +169,9 @@ always_extension: false
 
 # Counter storage location
 counter_file: "~/.stamp/counters.json"
-
-# Starting project number
-project_start: 395
 ```
+
+Sequential commands (`project`, `seq`) no longer read or write counters— they derive the next number by scanning your current directory for matching filenames or folders.
 
 ### Obsidian Integration
 
@@ -196,20 +205,24 @@ $ stamp project "Stamp CLI Tool"
 P0395 Stamp CLI Tool
 ```
 
-### Counter Workflow
+### Sequential Workflow
 
 ```bash
-# Check what's next without using it
+# Check what's next in this directory
 $ stamp project --check
 P0397
 
-# Actually create the project
+# Actually create the project (append a title)
 $ stamp project "New Feature"
 P0397 New Feature
 
-# Made a mistake? Reset
-$ stamp project --set 396
-Project counter set to 396
+# Use a custom prefix/width without touching config
+$ stamp seq --prefix jin --width 3 "Jinny Research"
+jin005 Jinny Research
+
+# Inspect the highest existing custom code
+$ stamp seq --prefix jin --counter
+Current counter for prefix JIN: 4
 ```
 
 ## Development

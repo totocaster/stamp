@@ -13,7 +13,6 @@ type Config struct {
 	Timezone        string `yaml:"timezone"`
 	AlwaysExtension bool   `yaml:"always_extension"`
 	CounterFile     string `yaml:"counter_file"`
-	ProjectStart    int    `yaml:"project_start"`
 }
 
 // Default returns the default configuration
@@ -24,7 +23,6 @@ func Default() *Config {
 		Timezone:        "", // Empty means use system timezone
 		AlwaysExtension: false,
 		CounterFile:     filepath.Join(home, ".stamp", "counters.json"),
-		ProjectStart:    395,
 	}
 }
 

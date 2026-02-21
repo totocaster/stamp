@@ -83,10 +83,6 @@ func TestDefault(t *testing.T) {
 		t.Errorf("Default AlwaysExtension = %v, want false", cfg.AlwaysExtension)
 	}
 
-	if cfg.ProjectStart != 395 {
-		t.Errorf("Default ProjectStart = %v, want 395", cfg.ProjectStart)
-	}
-
 	home, _ := os.UserHomeDir()
 	expectedCounterFile := filepath.Join(home, ".stamp", "counters.json")
 	if cfg.CounterFile != expectedCounterFile {
@@ -112,9 +108,6 @@ func TestLoad_NoConfigFile(t *testing.T) {
 	if cfg.AlwaysExtension != defaultCfg.AlwaysExtension {
 		t.Errorf("Load() AlwaysExtension = %v, want %v", cfg.AlwaysExtension, defaultCfg.AlwaysExtension)
 	}
-	if cfg.ProjectStart != defaultCfg.ProjectStart {
-		t.Errorf("Load() ProjectStart = %v, want %v", cfg.ProjectStart, defaultCfg.ProjectStart)
-	}
 }
 
 func TestLoad_WithConfigFile(t *testing.T) {
@@ -130,7 +123,6 @@ func TestLoad_WithConfigFile(t *testing.T) {
 		Timezone:        "Asia/Tokyo",
 		AlwaysExtension: true,
 		CounterFile:     "~/.stamp/test_counters.json",
-		ProjectStart:    500,
 	}
 
 	// Write config file
@@ -158,10 +150,6 @@ func TestLoad_WithConfigFile(t *testing.T) {
 
 	if cfg.AlwaysExtension != true {
 		t.Errorf("Load() AlwaysExtension = %v, want true", cfg.AlwaysExtension)
-	}
-
-	if cfg.ProjectStart != 500 {
-		t.Errorf("Load() ProjectStart = %v, want 500", cfg.ProjectStart)
 	}
 
 	expectedCounterFile := filepath.Join(tmpDir, ".stamp", "test_counters.json")
@@ -204,7 +192,6 @@ func TestSave(t *testing.T) {
 		Timezone:        "UTC",
 		AlwaysExtension: true,
 		CounterFile:     "~/.stamp/my_counters.json",
-		ProjectStart:    1000,
 	}
 
 	// Save config
@@ -233,9 +220,6 @@ func TestSave(t *testing.T) {
 		t.Errorf("Loaded AlwaysExtension = %v, want %v", loadedCfg.AlwaysExtension, cfg.AlwaysExtension)
 	}
 
-	if loadedCfg.ProjectStart != cfg.ProjectStart {
-		t.Errorf("Loaded ProjectStart = %v, want %v", loadedCfg.ProjectStart, cfg.ProjectStart)
-	}
 }
 
 func TestLoad_PartialConfig(t *testing.T) {
@@ -269,7 +253,4 @@ func TestLoad_PartialConfig(t *testing.T) {
 		t.Errorf("Load() AlwaysExtension = %v, want false (default)", cfg.AlwaysExtension)
 	}
 
-	if cfg.ProjectStart != 395 {
-		t.Errorf("Load() ProjectStart = %v, want 395 (default)", cfg.ProjectStart)
-	}
 }
